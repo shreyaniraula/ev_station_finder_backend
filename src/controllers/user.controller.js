@@ -3,6 +3,7 @@ import {ApiError} from '../utils/apiError.js'
 import {User} from '../models/user.model.js'
 import {uploadOnCloudinary} from '../utils/cloudinary.js'
 import Jwt from 'jsonwebtoken'
+import {ApiResponse} from '../utils/apiResponse.js'
 
 const generateAccessAndRefreshTokens = async (userId) => {
     try {
@@ -29,6 +30,10 @@ const registerUser = asyncHandler( async (req, res, next)=>{
         throw new ApiError(400, "All fields are required")
     }
 
+    if(phoneNumber.length != 10){
+        throw new ApiError(401, "Invalid phone number")
+    }
+
     // check if user already exists: username, email
     const userExists = await User.findOne({
         $or: [{ username }, { phoneNumber }, { email }]
@@ -38,10 +43,8 @@ const registerUser = asyncHandler( async (req, res, next)=>{
         throw new ApiError(409, "User with this email, username or phone number already exists")
     }
 
-    console.log(req.body)
-
-    // check for images, check for photo
-    const imageLocalPath = req.body.image;
+    // check for images
+    const imageLocalPath = req.files?.image[0]?.path;
 
     if (!imageLocalPath) {
         throw new ApiError(400, "Image is required")
@@ -50,7 +53,7 @@ const registerUser = asyncHandler( async (req, res, next)=>{
     // upload them to cloudinary
     const image = await uploadOnCloudinary(imageLocalPath)
 
-    if (!photo) {
+    if (!image) {
         throw new ApiError(400, "Could not upload image. Try again.")
     }
     // create user object - create entry in db
@@ -59,7 +62,7 @@ const registerUser = asyncHandler( async (req, res, next)=>{
         username: username.toLowerCase(),
         password,
         phoneNumber,
-        image: imageLocalPath,
+        image: image.url,
         email,
     })
     // remove password and refresh token field from response
@@ -77,16 +80,16 @@ const registerUser = asyncHandler( async (req, res, next)=>{
     )
 })
 
-const loginUser = asyncHandler(async (req, res) => {
+const loginUser = asyncHandler(async (req, res, next) => {
     //extract data from req.body
-    const { username, email, password, phoneNumber } = req.body
+    const {username, password, phoneNumber, email} = req.body;
 
-    //check if username or email is entered
-    if (!(username || email || phoneNumber)) {
-        throw new ApiError(400, "Username, email or phone number is required")
+    //check if username email, phone number is entered
+    if (!username && !email && !phoneNumber) {
+        throw new ApiError(400, "Username, email, or phone number is required");
     }
 
-    if(phoneNumber.length != 10){
+    if(phoneNumber && phoneNumber.length != 10){
         throw new ApiError(401, "Invalid phone number")
     }
 
