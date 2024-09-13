@@ -1,9 +1,14 @@
 import asyncHandler from '../utils/asyncHandler.js'
-import {ApiError} from '../utils/apiError.js'
-import {User} from '../models/user.model.js'
-import {uploadOnCloudinary} from '../utils/cloudinary.js'
+import { ApiError } from '../utils/apiError.js'
+import { User } from '../models/user.model.js'
+import { uploadOnCloudinary } from '../utils/cloudinary.js'
 import Jwt from 'jsonwebtoken'
-import {ApiResponse} from '../utils/apiResponse.js'
+import { ApiResponse } from '../utils/apiResponse.js'
+
+const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email)
+}
 
 const generateAccessAndRefreshTokens = async (userId) => {
     try {
@@ -21,16 +26,20 @@ const generateAccessAndRefreshTokens = async (userId) => {
     }
 }
 
-const registerUser = asyncHandler( async (req, res, next)=>{
-    const {fullName, username, password, phoneNumber, email} = req.body;
+const registerUser = asyncHandler(async (req, res, next) => {
+    const { fullName, username, password, phoneNumber, email } = req.body;
 
-    if([fullName, username, password, phoneNumber, email].some((field)=>
+    if ([fullName, username, password, phoneNumber, email].some((field) =>
         field?.trim === ""
-    )){
+    )) {
         throw new ApiError(400, "All fields are required")
     }
 
-    if(phoneNumber.length != 10){
+    if (!validateEmail(email)) {
+        throw new ApiError(401, "Invalid email")
+    }
+
+    if (phoneNumber.length != 10) {
         throw new ApiError(401, "Invalid phone number")
     }
 
@@ -82,20 +91,24 @@ const registerUser = asyncHandler( async (req, res, next)=>{
 
 const loginUser = asyncHandler(async (req, res, next) => {
     //extract data from req.body
-    const {username, password, phoneNumber, email} = req.body;
+    const { username, password, phoneNumber, email } = req.body;
 
     //check if username email, phone number is entered
     if (!username && !email && !phoneNumber) {
         throw new ApiError(400, "Username, email, or phone number is required");
     }
 
-    if(phoneNumber && phoneNumber.length != 10){
+    if (email && !validateEmail(email)) {
+        throw new ApiError(401, "Invalid email")
+    }
+
+    if (phoneNumber && phoneNumber.length != 10) {
         throw new ApiError(401, "Invalid phone number")
     }
 
     //Check if user is registered
     const user = await User.findOne({
-        $or: [{ username }, { email }, {phoneNumber}]
+        $or: [{ username }, { email }, { phoneNumber }]
     })
 
     if (!user) {
@@ -113,7 +126,6 @@ const loginUser = asyncHandler(async (req, res, next) => {
     const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user._id)
 
     const loggedInUser = await User.findById(user._id).select("-password -refreshToken")
-    // console.log(loggedInUser);
 
     //send cookie
     const options = {
@@ -177,7 +189,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
             throw new ApiError(401, "Unauthorized request")
         }
 
-        const decodedToken = Jwt.verify(incomingRefreshToken, process.env.REFRESH_TOKEN_SECRET)
+        const decodedToken = Jwt.verify(incomingRefreshToken, process.env.REFRESH_TOKEN_SECRET )
 
         const user = await User.findById(decodedToken?._id)
         if (!user) {
@@ -243,14 +255,23 @@ const getCurrentUser = asyncHandler(async (req, res) => {
         .status(200)
         .json(
             new ApiResponse(200, req.user, "User fetched successfully"
-            ))
+            )
+        )
 })
 
 const updateUserDetails = asyncHandler(async (req, res) => {
-    const { fullName, email, phoneNumber } = req.body
+    const { fullName, username, email, phoneNumber } = req.body
 
-    if (!fullName || !email || !phoneNumber) {
+    if (!fullName || !username || !email || !phoneNumber) {
         throw new ApiError(400, "All fields are required")
+    }
+
+    if (!validateEmail(email)) {
+        throw new ApiError(401, "Invalid email")
+    }
+
+    if (phoneNumber.length != 10) {
+        throw new ApiError(401, "Invalid phone number")
     }
 
     const user = await User.findByIdAndUpdate(
@@ -258,6 +279,7 @@ const updateUserDetails = asyncHandler(async (req, res) => {
         {
             $set: {
                 fullName,
+                username,
                 email,
                 phoneNumber,
             },
@@ -267,7 +289,14 @@ const updateUserDetails = asyncHandler(async (req, res) => {
 
     return res
         .status(200)
-        .json(200, user, "Account details updated successfully")
+        .json(new ApiResponse(
+            200,
+            {
+                user
+            },
+            "Account details updated successfully"
+        )
+        )
 })
 
 const updateImage = asyncHandler(async (req, res) => {
@@ -302,4 +331,4 @@ const updateImage = asyncHandler(async (req, res) => {
         )
 })
 
-export {registerUser, loginUser, logoutUser, changeCurrentPassword, updateImage, updateUserDetails, getCurrentUser, refreshAccessToken}
+export { registerUser, loginUser, logoutUser, changeCurrentPassword, updateImage, updateUserDetails, getCurrentUser, refreshAccessToken }

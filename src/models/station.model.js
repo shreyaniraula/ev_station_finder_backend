@@ -33,9 +33,14 @@ const stationSchema = new Schema({
         type: Number,
         required: true,
     },
+    isVerified:{
+        type: Boolean,
+        required: true,
+    }
 },
     { timestamps: true },
 );
+
 //Encrypt password before saving in DB
 stationSchema.pre("save", async function (next) {
     //Run the function only if password is modified
@@ -58,21 +63,23 @@ stationSchema.methods.generateAccessToken = function () {
             username: this.username,
             name: this.name
         },
-        process.env.ACCESS_TOKEN_SECRET,
+        process.env.ACCESS_TOKEN_SECRET ,
         {
             expiresIn: process.env.ACCESS_TOKEN_EXPIRY
         }
     )
 }
+
 stationSchema.methods.generateRefreshToken = function () {
     return jwt.sign(
         {
             _id: this._id,
         },
-        process.env.REFRESH_TOKEN_SECRET,
+        process.env.REFRESH_TOKEN_SECRET ,
         {
             expiresIn: process.env.REFRESH_TOKEN_EXPIRY
         }
     )
 }
+
 export const Station = mongoose.model("Station", stationSchema);
