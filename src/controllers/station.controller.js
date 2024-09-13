@@ -53,9 +53,11 @@ const registerStation = asyncHandler(async (req, res, next) => {
     // upload them to cloudinary
     const panCard = await uploadOnCloudinary(panCardLocalPath)
 
+    console.log("reached here")
     if (!panCard) {
         throw new ApiError(400, "Could not upload pan card. Try again.")
     }
+
 
     // create station object - create entry in db
     const station = await Station.create({
@@ -67,6 +69,7 @@ const registerStation = asyncHandler(async (req, res, next) => {
         location,
         noOfSlots,
         isVerified: false,
+        reservedSlots: 0
     })
 
     // remove password and refresh token field from response
@@ -317,6 +320,11 @@ const updatePanCard = asyncHandler(async (req, res) => {
                 200, station, "pan card updated successfully"
             )
         )
+})
+
+// TODO: write code to update reservation
+const updateReservation = asyncHandler(async(req, res)=>{
+
 })
 
 export { refreshAccessToken, registerStation, loginStation, logoutStation, changeCurrentPassword, getCurrentStation, updateStationDetails, updatePanCard }

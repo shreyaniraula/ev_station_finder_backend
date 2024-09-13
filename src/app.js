@@ -17,9 +17,11 @@ app.use(cookieParser())
 
 import userRouter from "./routes/user.routes.js";
 import stationRouter from './routes/station.routes.js'
+import reservationRouter from "./routes/reservation.routes.js";
 
 //declare routes
 app.use('/api/v1/users', userRouter)
 app.use('/api/v1/stations', stationRouter)
+app.use('/api/v1/reserve', reservationRouter)
 
 export default app;

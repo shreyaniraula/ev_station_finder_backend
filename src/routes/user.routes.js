@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { getCurrentUser, loginUser, logoutUser, refreshAccessToken, registerUser, updateImage, updateUserDetails } from '../controllers/user.controller.js'
 import { upload } from '../middlewares/multer.middleware.js'
 import { verifyUserJWT } from '../middlewares/userAuth.middleware.js'
+import { addReservation } from '../controllers/reservation.controller.js'
 
 const userRouter = Router()
 

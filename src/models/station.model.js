@@ -36,6 +36,9 @@ const stationSchema = new Schema({
     isVerified:{
         type: Boolean,
         required: true,
+    },
+    reservedSlots:{
+        type: Number,
     }
 },
     { timestamps: true },

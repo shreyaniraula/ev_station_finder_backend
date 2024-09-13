@@ -12,6 +12,13 @@ const reservationSchema = new Schema({
     paymentAmount: {
         type: Number,
         required: true
+    },
+    chargingTime: {
+        type: String,
+        required: true
+    },
+    remarks: {
+        type: String
     }
 },
     {
