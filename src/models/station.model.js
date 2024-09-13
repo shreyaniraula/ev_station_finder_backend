@@ -36,5 +36,43 @@ const stationSchema = new Schema({
 },
     { timestamps: true },
 );
+//Encrypt password before saving in DB
+stationSchema.pre("save", async function (next) {
+    //Run the function only if password is modified
+    if (!this.isModified("password")) return next()
 
+    this.password = await bcrypt.hash(this.password, 10)
+    next()
+})
+
+//Create a method to check password
+stationSchema.methods.isPasswordCorrect = async function (password) {
+    return await bcrypt.compare(password, this.password)
+}
+
+stationSchema.methods.generateAccessToken = function () {
+    return jwt.sign(
+        {
+            _id: this._id,
+            phoneNumber: this.phoneNumber,
+            username: this.username,
+            name: this.name
+        },
+        process.env.ACCESS_TOKEN_SECRET,
+        {
+            expiresIn: process.env.ACCESS_TOKEN_EXPIRY
+        }
+    )
+}
+stationSchema.methods.generateRefreshToken = function () {
+    return jwt.sign(
+        {
+            _id: this._id,
+        },
+        process.env.REFRESH_TOKEN_SECRET,
+        {
+            expiresIn: process.env.REFRESH_TOKEN_EXPIRY
+        }
+    )
+}
 export const Station = mongoose.model("Station", stationSchema);

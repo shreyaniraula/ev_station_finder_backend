@@ -27,20 +27,21 @@ const userSchema = new Schema({
     },
     email: {
         type: String,
+        required: true,
     },
-    photo: {
+    image: {
         type: String,       //cloudinary url
         required: true,
     },
     refreshToken: {
         type: String,
     },
-
 },
 {
     timestamps: true
 },
 );
+
 //Encrypt password before saving in DB
 userSchema.pre("save", async function (next) {
     //Run the function only if password is modified
@@ -59,7 +60,7 @@ userSchema.methods.generateAccessToken = function () {
     return jwt.sign(
         {
             _id: this._id,
-            email: this.email,
+            phoneNumber: this.phoneNumber,
             username: this.username,
             fullName: this.fullName
         },
@@ -80,4 +81,5 @@ userSchema.methods.generateRefreshToken = function () {
         }
     )
 }
+
 export const User = mongoose.model("User", userSchema);
