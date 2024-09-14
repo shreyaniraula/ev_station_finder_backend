@@ -13,7 +13,11 @@ const reservationSchema = new Schema({
         type: Number,
         required: true
     },
-    chargingTime: {
+    startingTime: {
+        type: String,
+        required: true
+    },
+    endingTime: {
         type: String,
         required: true
     },
