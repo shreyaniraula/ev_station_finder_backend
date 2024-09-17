@@ -4,22 +4,27 @@ import { ApiError } from "../utils/apiError.js";
 import { ApiResponse } from "../utils/apiResponse.js";
 import asyncHandler from "../utils/asyncHandler.js";
 
-//TODO: write code to get all reservation statuses
-const getReservationStatus = asyncHandler(async (req, res) => {
-    const stationId = parseInt(req.params.id);
-    const station = findStationById(stationId);
+//To be done by the station if some other EV is charged outside the app
+const updateReservation = asyncHandler(async (req, res) => {
+    const { reservedSlots, reservedTill } = req.body
 
-    if (!station) {
-        return res.status(404).json({ error: 'Station not found' });
+    const station = await Station.findById(req.station._id)
+
+    if (station.noOfSlots < reservedSlots) {
+        throw new ApiError(401, "Reserved slots cannot be more than total slots.")
     }
+    station.reservedSlots = reservedSlots
+    station.endingTime = reservedTill
+    station.save()
 
-    const availableSpots = station.totalSpots - station.reservedSpots;
-    res.json({
-        stationId: station.id,
-        totalSpots: station.totalSpots,
-        reservedSpots: station.reservedSpots,
-        availableSpots: availableSpots
-    });
+    return res.status(200).json(
+        new ApiResponse(
+
+            200,
+            { station },
+            "Reservation information updated successfully."
+        )
+    )
 })
 
 const addReservation = asyncHandler(async (req, res) => {
@@ -56,11 +61,35 @@ const addReservation = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Some error occurred while adding comment")
     }
 
+    //Increase the number of reserved slots by 1 if reservation is done
     station.reservedSlots += 1
+    station.save()
 
     return res.status(200).json(
         new ApiResponse(200, reservation, "Reservation added successfully")
     )
 })
 
-export { addReservation }
+const cancelReservation = asyncHandler(async (req, res) => {
+    const userId = req.user?._id;
+    const stationId = req.params;
+    const cancelledReservation = await Reservation.deleteOne({
+        reservedBy: userId,
+        reservedTo: stationId
+    })
+
+    if (!cancelledReservation) {
+        throw new ApiError(400, "Unable to cancel reservation")
+    }
+
+    //Decrease the number of reserved slots by 1 if reservation is cancelled
+    const station = await Station.findById(stationId)
+    station.reservedSlots -= 1
+    station.save()
+
+    return res.status(200).json(
+        new ApiResponse(200, cancelledReservation, "Reservation cancelled successfully.")
+    )
+})
+
+export { addReservation, updateReservation, cancelReservation }

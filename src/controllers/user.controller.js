@@ -5,10 +5,22 @@ import { uploadOnCloudinary } from '../utils/cloudinary.js'
 import Jwt from 'jsonwebtoken'
 import { ApiResponse } from '../utils/apiResponse.js'
 
+
+//TODO: apply otp
 const validateEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email)
 }
+
+// const verifyOTP = asyncHandler(async (phoneNumber) => {
+//     const accountSid = process.env.TWILIO_SID;
+//     const authToken = TWILIO_AUTH_TOKEN;
+//     const client = require('twilio')(accountSid, authToken);
+
+//     client.verify.v2.services(TWILIO_VERIFY_SERVICE_SID)
+//         .verifications
+//         .create({ to: phoneNumber, channel: 'sms' });
+// })
 
 const generateAccessAndRefreshTokens = async (userId) => {
     try {
@@ -65,6 +77,7 @@ const registerUser = asyncHandler(async (req, res, next) => {
     if (!image) {
         throw new ApiError(400, "Could not upload image. Try again.")
     }
+
     // create user object - create entry in db
     const user = await User.create({
         fullName,
@@ -74,6 +87,7 @@ const registerUser = asyncHandler(async (req, res, next) => {
         image: image.url,
         email,
     })
+
     // remove password and refresh token field from response
     const createdUser = await User.findById(user._id).select(
         "-password -refreshToken"
@@ -189,7 +203,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
             throw new ApiError(401, "Unauthorized request")
         }
 
-        const decodedToken = Jwt.verify(incomingRefreshToken, process.env.REFRESH_TOKEN_SECRET )
+        const decodedToken = Jwt.verify(incomingRefreshToken, process.env.USER_REFRESH_TOKEN_SECRET)
 
         const user = await User.findById(decodedToken?._id)
         if (!user) {
@@ -289,13 +303,14 @@ const updateUserDetails = asyncHandler(async (req, res) => {
 
     return res
         .status(200)
-        .json(new ApiResponse(
-            200,
-            {
-                user
-            },
-            "Account details updated successfully"
-        )
+        .json(
+            new ApiResponse(
+                200,
+                {
+                    user
+                },
+                "Account details updated successfully"
+            )
         )
 })
 

@@ -139,7 +139,7 @@ const loginStation= asyncHandler(async (req, res, next) => {
                 {
                     station: loggedInStation, accessToken, refreshToken
                 },
-                "Stationlogged in successfully"
+                "Station logged in successfully"
             )
         )
 })
@@ -184,7 +184,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
             throw new ApiError(401, "Unauthorized request")
         }
 
-        const decodedToken = Jwt.verify(incomingRefreshToken, process.env.REFRESH_TOKEN_SECRET)
+        const decodedToken = Jwt.verify(incomingRefreshToken, process.env.STATION_REFRESH_TOKEN_SECRET)
 
         const station = await Station.findById(decodedToken?._id)
         if (!station) {
@@ -320,11 +320,6 @@ const updatePanCard = asyncHandler(async (req, res) => {
                 200, station, "pan card updated successfully"
             )
         )
-})
-
-// TODO: write code to update reservation
-const updateReservation = asyncHandler(async(req, res)=>{
-
 })
 
 export { refreshAccessToken, registerStation, loginStation, logoutStation, changeCurrentPassword, getCurrentStation, updateStationDetails, updatePanCard }

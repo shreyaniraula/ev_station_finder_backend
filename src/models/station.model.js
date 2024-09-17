@@ -2,6 +2,7 @@ import mongoose, { Schema } from "mongoose";
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 
+//TODO: apply type of chargers
 const stationSchema = new Schema({
     name: {
         type: String,
@@ -26,19 +27,19 @@ const stationSchema = new Schema({
         required: true,
     },
     panCard: {
-        type: String,
+        type: String,   //cloudinary url
         required: true,
     },
     noOfSlots: {
         type: Number,
         required: true,
     },
-    isVerified:{
+    reservedSlots: {
+        type: Number,
+    },
+    isVerified: {
         type: Boolean,
         required: true,
-    },
-    reservedSlots:{
-        type: Number,
     }
 },
     { timestamps: true },
@@ -66,7 +67,7 @@ stationSchema.methods.generateAccessToken = function () {
             username: this.username,
             name: this.name
         },
-        process.env.ACCESS_TOKEN_SECRET ,
+        process.env.STATION_ACCESS_TOKEN_SECRET,
         {
             expiresIn: process.env.ACCESS_TOKEN_EXPIRY
         }
@@ -78,7 +79,7 @@ stationSchema.methods.generateRefreshToken = function () {
         {
             _id: this._id,
         },
-        process.env.REFRESH_TOKEN_SECRET ,
+        process.env.STATION_REFRESH_TOKEN_SECRET,
         {
             expiresIn: process.env.REFRESH_TOKEN_EXPIRY
         }
