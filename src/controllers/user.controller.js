@@ -39,9 +39,9 @@ const generateAccessAndRefreshTokens = async (userId) => {
 }
 
 const registerUser = asyncHandler(async (req, res, next) => {
-    const { fullName, username, password, phoneNumber, email } = req.body;
+    const { fullName, username, password, confirmPassword, phoneNumber, email } = req.body;
 
-    if ([fullName, username, password, phoneNumber, email].some((field) =>
+    if ([fullName, username, password, confirmPassword, phoneNumber, email].some((field) =>
         field?.trim === ""
     )) {
         throw new ApiError(400, "All fields are required")
@@ -53,6 +53,10 @@ const registerUser = asyncHandler(async (req, res, next) => {
 
     if (phoneNumber.length != 10) {
         throw new ApiError(401, "Invalid phone number")
+    }
+
+    if(password !== confirmPassword){
+        throw new ApiError(401, "Password does not match with confirm password")
     }
 
     // check if user already exists: username, email

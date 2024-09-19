@@ -22,9 +22,9 @@ const generateAccessAndRefreshTokens = async (stationId) => {
 }
 
 const registerStation = asyncHandler(async (req, res, next) => {
-    const { name, username, password, phoneNumber, location, noOfSlots } = req.body;
+    const { name, username, password, confirmPassword, phoneNumber, location, noOfSlots } = req.body;
 
-    if ([name, username, password, phoneNumber, location, noOfSlots].some((field) =>
+    if ([name, username, password, confirmPassword, phoneNumber, location, noOfSlots].some((field) =>
         field?.trim === ""
     )) {
         throw new ApiError(400, "All fields are required")
@@ -32,6 +32,10 @@ const registerStation = asyncHandler(async (req, res, next) => {
 
     if (phoneNumber.length != 10) {
         throw new ApiError(401, "Invalid phone number")
+    }
+
+    if(password !== confirmPassword){
+        throw new ApiError(401, "Password does not match with confirm password")
     }
 
     // check if station already exists: username, phone number
