@@ -22,7 +22,8 @@ const reservationSchema = new Schema({
         required: true
     },
     remarks: {
-        type: String
+        type: String,
+        required: true
     }
 },
     {
