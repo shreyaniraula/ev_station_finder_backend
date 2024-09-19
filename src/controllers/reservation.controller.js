@@ -92,4 +92,21 @@ const cancelReservation = asyncHandler(async (req, res) => {
     )
 })
 
-export { addReservation, updateReservation, cancelReservation }
+const viewReservations = asyncHandler(async (req, res) => {
+    const stationId = req.station._id;
+
+    const reservations = await Reservation.find({ reservedTo: stationId })
+
+    if (!reservations) {
+        throw new ApiError(400, "Something went wrong while fetching reservations")
+    }
+
+    console.log(reservations)
+
+    return res.status(200).json(
+        new ApiResponse(
+            200, reservations, "Reservations fetched successfully"),
+        )
+})
+
+export { addReservation, updateReservation, cancelReservation, viewReservations }
