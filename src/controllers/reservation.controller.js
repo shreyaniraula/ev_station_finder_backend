@@ -1,6 +1,5 @@
 import { Reservation } from "../models/reservation.model.js";
 import { Station } from "../models/station.model.js";
-import { ApiError } from "../utils/apiError.js";
 import { ApiResponse } from "../utils/apiResponse.js";
 import asyncHandler from "../utils/asyncHandler.js";
 
@@ -11,7 +10,13 @@ const updateReservation = asyncHandler(async (req, res) => {
     const station = await Station.findById(req.station._id)
 
     if (station.noOfSlots < reservedSlots) {
-        throw new ApiError(401, "Reserved slots cannot be more than total slots.")
+        return res.status(401).json(
+            new ApiResponse(
+                401,
+                {},
+                "Reserved slots cannot be more than total slots."
+            )
+        )
     }
     station.reservedSlots = reservedSlots
     station.endingTime = reservedTill
@@ -19,7 +24,6 @@ const updateReservation = asyncHandler(async (req, res) => {
 
     return res.status(200).json(
         new ApiResponse(
-
             200,
             { station },
             "Reservation information updated successfully."
@@ -36,16 +40,22 @@ const addReservation = asyncHandler(async (req, res) => {
     const station = await Station.findById(stationId)
 
     if (!station) {
-        throw new ApiError(404, "Station not found")
+        return res.status(404).json(
+            new ApiResponse(404, {}, "Station not found")
+        )
     }
 
     if (!station.isVerified) {
-        throw new ApiError(401, "Station not verified")
+        return res.status(401).json(
+            new ApiResponse(401, {}, "Station not verified")
+        )
     }
 
     const availableSpots = station.noOfSlots - station.reservedSlots;
     if (availableSpots <= 0) {
-        return res.status(400).json({ error: 'No available spots for reservation' });
+        return res.status(400).json(
+            new ApiResponse(400, {}, "No available spots for reservation")
+        )
     }
 
     const reservation = await Reservation.create({
@@ -58,7 +68,9 @@ const addReservation = asyncHandler(async (req, res) => {
     })
 
     if (!reservation) {
-        throw new ApiError(400, "Some error occurred while adding comment")
+        return res.status(400).json(
+            new ApiResponse(400, reservation, "Some error occurred while adding reservation")
+        )
     }
 
     //Increase the number of reserved slots by 1 if reservation is done
@@ -79,7 +91,9 @@ const cancelReservation = asyncHandler(async (req, res) => {
     })
 
     if (!cancelledReservation) {
-        throw new ApiError(400, "Unable to cancel reservation")
+        return res.status(400).json(
+            new ApiResponse(400, {}, "Unable to cancel reservation")
+        )
     }
 
     //Decrease the number of reserved slots by 1 if reservation is cancelled
@@ -98,15 +112,18 @@ const viewReservations = asyncHandler(async (req, res) => {
     const reservations = await Reservation.find({ reservedTo: stationId })
 
     if (!reservations) {
-        throw new ApiError(400, "Something went wrong while fetching reservations")
+        return res.status(400).json(
+            new ApiResponse(
+                400, reservations, "Something went wrong while fetching reservations",
+            ),
+        )
     }
-
-    console.log(reservations)
 
     return res.status(200).json(
         new ApiResponse(
-            200, reservations, "Reservations fetched successfully"),
-        )
+            200, reservations, "Reservations fetched successfully",
+        ),
+    )
 })
 
 export { addReservation, updateReservation, cancelReservation, viewReservations }

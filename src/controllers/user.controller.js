@@ -1,5 +1,4 @@
 import asyncHandler from '../utils/asyncHandler.js'
-import { ApiError } from '../utils/apiError.js'
 import { User } from '../models/user.model.js'
 import { uploadOnCloudinary } from '../utils/cloudinary.js'
 import Jwt from 'jsonwebtoken'
@@ -27,14 +26,12 @@ const generateAccessAndRefreshTokens = async (userId) => {
         const user = await User.findOne(userId)
         const accessToken = user.generateAccessToken()
         const refreshToken = user.generateRefreshToken()
-
+    
         user.refreshToken = refreshToken
         await user.save({ validateBeforeSave: false })
         return { refreshToken, accessToken }
-    }
-    catch (e) {
-        console.log(e)
-        throw new ApiError(500, "Something went wrong while generating access and user tokens")
+    } catch (error) {
+        console.log(error);
     }
 }
 
@@ -44,19 +41,27 @@ const registerUser = asyncHandler(async (req, res, next) => {
     if ([fullName, username, password, confirmPassword, phoneNumber, email].some((field) =>
         field?.trim === ""
     )) {
-        throw new ApiError(400, "All fields are required")
+        return res.status(400).json(
+            new ApiResponse(400, {}, "All fields are required")
+        )
     }
 
     if (!validateEmail(email)) {
-        throw new ApiError(401, "Invalid email")
+        return res.status(401).json(
+            new ApiResponse(401, {}, "Invalid email")
+        )
     }
 
     if (phoneNumber.length != 10) {
-        throw new ApiError(401, "Invalid phone number")
+        return res.status(401).json(
+            new ApiResponse(401, {}, "Invalid phone number")
+        )
     }
 
-    if(password !== confirmPassword){
-        throw new ApiError(401, "Password does not match with confirm password")
+    if (password !== confirmPassword) {
+        return res.status(401).json(
+            new ApiResponse(401, {}, "Password does not match with confirm password")
+        )
     }
 
     // check if user already exists: username, email
@@ -65,21 +70,27 @@ const registerUser = asyncHandler(async (req, res, next) => {
     })
 
     if (userExists) {
-        throw new ApiError(409, "User with this email, username or phone number already exists")
+        return res.status(409).json(
+            new ApiResponse(409, {}, "User with this email, username or phone number already exists")
+        )
     }
 
     // check for images
     const imageLocalPath = req.files?.image[0]?.path;
 
     if (!imageLocalPath) {
-        throw new ApiError(400, "Image is required")
+        return res.status(400).json(
+            new ApiResponse(400, {}, "Image is required")
+        )
     }
 
     // upload them to cloudinary
     const image = await uploadOnCloudinary(imageLocalPath)
 
     if (!image) {
-        throw new ApiError(400, "Could not upload image. Try again.")
+        return res.status(400).json(
+            new ApiResponse(400, {}, "Could not upload image. Try again.")
+        )
     }
 
     // create user object - create entry in db
@@ -98,7 +109,9 @@ const registerUser = asyncHandler(async (req, res, next) => {
     )
     // check for user creation
     if (!createdUser) {
-        throw new ApiError(500, "Something went wrong while registering user")
+        return res.status(500).json(
+            new ApiResponse(500, {}, "Something went wrong while registering user")
+        )
     }
 
     // return res   
@@ -113,15 +126,39 @@ const loginUser = asyncHandler(async (req, res, next) => {
 
     //check if username email, phone number is entered
     if (!username && !email && !phoneNumber) {
-        throw new ApiError(400, "Username, email, or phone number is required");
+        return res
+            .status(400)
+            .json(
+                new ApiResponse(
+                    400,
+                    {},
+                    "Username, email, or phone number is required"
+                )
+            )
     }
 
     if (email && !validateEmail(email)) {
-        throw new ApiError(401, "Invalid email")
+        return res
+            .status(401)
+            .json(
+                new ApiResponse(
+                    401,
+                    {},
+                    "Invalid email"
+                )
+            )
     }
 
     if (phoneNumber && phoneNumber.length != 10) {
-        throw new ApiError(401, "Invalid phone number")
+        return res
+            .status(401)
+            .json(
+                new ApiResponse(
+                    401,
+                    {},
+                    "Invalid phone number"
+                )
+            )
     }
 
     //Check if user is registered
@@ -130,18 +167,26 @@ const loginUser = asyncHandler(async (req, res, next) => {
     })
 
     if (!user) {
-        throw new ApiError(404, "User does not exist")
+        return res
+            .status(404)
+            .json(
+                new ApiResponse(404, {}, "User does not exist")
+            )
     }
 
     //Check password
     const isPasswordValid = await user.isPasswordCorrect(password)
 
     if (!isPasswordValid) {
-        throw new ApiError(401, "Incorrect user credentials")
+        return res
+            .status(401)
+            .json(
+                new ApiResponse(401, {}, "Incorrect user credentials")
+            )
     }
 
     //access and refresh tokens
-    const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user._id)
+    const { accessToken, refreshToken } = generateAccessAndRefreshTokens(user._id)
 
     const loggedInUser = await User.findById(user._id).select("-password -refreshToken")
 
@@ -200,48 +245,69 @@ const logoutUser = asyncHandler(async (req, res) => {
 })
 
 const refreshAccessToken = asyncHandler(async (req, res) => {
-    try {
-        const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken
 
-        if (!incomingRefreshToken) {
-            throw new ApiError(401, "Unauthorized request")
-        }
+    const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken
 
-        const decodedToken = Jwt.verify(incomingRefreshToken, process.env.USER_REFRESH_TOKEN_SECRET)
-
-        const user = await User.findById(decodedToken?._id)
-        if (!user) {
-            throw new ApiError(401, "Invalid refresh token")
-        }
-
-        if (incomingRefreshToken !== user.refreshToken) {
-            throw new ApiError(401, "Refresh token is expired or used")
-        }
-
-        const options = {
-            httpOnly: true,
-            secure: true
-        }
-
-        const { accessToken, newrefreshToken } = await generateAccessAndRefreshTokens(user._id)
-
+    if (!incomingRefreshToken) {
         return res
-            .status(200)
-            .cookie("accessToken", accessToken, options)
-            .cookie("refreshToken", newrefreshToken, options)
+            .status(401)
             .json(
                 new ApiResponse(
-                    200,
-                    {
-                        accessToken,
-                        refreshToken: newrefreshToken
-                    },
-                    "Access token refreshed"
+                    401,
+                    {},
+                    "Unauthorized request"
                 )
             )
-    } catch (error) {
-        throw new ApiError(401, error?.message || "Invalid refresh token")
     }
+
+    const decodedToken = Jwt.verify(incomingRefreshToken, process.env.USER_REFRESH_TOKEN_SECRET)
+
+    const user = await User.findById(decodedToken?._id)
+    if (!user) {
+        return res
+            .status(401)
+            .json(
+                new ApiResponse(
+                    401,
+                    {},
+                    "Invalid refresh token"
+                )
+            )
+    }
+
+    if (incomingRefreshToken !== user.refreshToken) {
+        return res
+            .status(401)
+            .json(
+                new ApiResponse(
+                    401,
+                    {},
+                    "Refresh token is expired or used"
+                )
+            )
+    }
+
+    const options = {
+        httpOnly: true,
+        secure: true
+    }
+
+    const { accessToken, newrefreshToken } = await generateAccessAndRefreshTokens(user._id)
+
+    return res
+        .status(200)
+        .cookie("accessToken", accessToken, options)
+        .cookie("refreshToken", newrefreshToken, options)
+        .json(
+            new ApiResponse(
+                200,
+                {
+                    accessToken,
+                    refreshToken: newrefreshToken
+                },
+                "Access token refreshed"
+            )
+        )
 })
 
 const changeCurrentPassword = asyncHandler(async (req, res) => {
@@ -252,7 +318,15 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
     const isPasswordCorrect = await user.isPasswordCorrect(oldPassword)
 
     if (!isPasswordCorrect) {
-        throw new ApiError(400, "Invalid password")
+        return res
+            .status(400)
+            .json(
+                new ApiResponse(
+                    400,
+                    {},
+                    "Invalid password"
+                )
+            )
     }
 
     user.password = newPassword
@@ -281,15 +355,39 @@ const updateUserDetails = asyncHandler(async (req, res) => {
     const { fullName, username, email, phoneNumber } = req.body
 
     if (!fullName || !username || !email || !phoneNumber) {
-        throw new ApiError(400, "All fields are required")
+        return res
+            .status(400)
+            .json(
+                new ApiResponse(
+                    400,
+                    {},
+                    "All fields are required"
+                )
+            )
     }
 
     if (!validateEmail(email)) {
-        throw new ApiError(401, "Invalid email")
+        return res
+            .status(401)
+            .json(
+                new ApiResponse(
+                    401,
+                    {},
+                    "Invalid email"
+                )
+            )
     }
 
     if (phoneNumber.length != 10) {
-        throw new ApiError(401, "Invalid phone number")
+        return res
+            .status(401)
+            .json(
+                new ApiResponse(
+                    401,
+                    {},
+                    "Invalid phone number"
+                )
+            )
     }
 
     const user = await User.findByIdAndUpdate(
@@ -322,13 +420,29 @@ const updateImage = asyncHandler(async (req, res) => {
     const imageLocalPath = req.file?.path
 
     if (!imageLocalPath) {
-        throw new ApiError(400, "Image is missing")
+        return res
+            .status(400)
+            .json(
+                new ApiResponse(
+                    400,
+                    {},
+                    "Image is missing"
+                )
+            )
     }
 
     const image = await uploadOnCloudinary(imageLocalPath)
 
     if (!image) {
-        throw new ApiError(400, "Error while uploading image")
+        return res
+            .status(400)
+            .json(
+                new ApiResponse(
+                    400,
+                    {},
+                    "Error while uploading image"
+                )
+            )
     }
 
     const user = await User.findByIdAndUpdate(

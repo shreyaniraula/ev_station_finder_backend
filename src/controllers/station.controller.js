@@ -1,25 +1,19 @@
 import asyncHandler from '../utils/asyncHandler.js'
-import { ApiError } from '../utils/apiError.js'
 import { uploadOnCloudinary } from '../utils/cloudinary.js'
 import Jwt from 'jsonwebtoken'
 import { ApiResponse } from '../utils/apiResponse.js'
 import { Station } from '../models/station.model.js'
 
-const generateAccessAndRefreshTokens = async (stationId) => {
-    try {
-        const station = await Station.findOne(stationId)
-        const accessToken = station.generateAccessToken()
-        const refreshToken = station.generateRefreshToken()
+const generateAccessAndRefreshTokens = asyncHandler(async (stationId) => {
 
-        station.refreshToken = refreshToken
-        await station.save({ validateBeforeSave: false })
-        return { refreshToken, accessToken }
-    }
-    catch (e) {
-        console.log(e)
-        throw new ApiError(500, "Something went wrong while generating access and refresh tokens")
-    }
-}
+    const station = await Station.findOne(stationId)
+    const accessToken = station.generateAccessToken()
+    const refreshToken = station.generateRefreshToken()
+
+    station.refreshToken = refreshToken
+    await station.save({ validateBeforeSave: false })
+    return { refreshToken, accessToken }
+})
 
 const registerStation = asyncHandler(async (req, res, next) => {
     const { name, username, password, confirmPassword, phoneNumber, location, noOfSlots } = req.body;
@@ -27,15 +21,21 @@ const registerStation = asyncHandler(async (req, res, next) => {
     if ([name, username, password, confirmPassword, phoneNumber, location, noOfSlots].some((field) =>
         field?.trim === ""
     )) {
-        throw new ApiError(400, "All fields are required")
+        return res.status(400).json(
+            new ApiResponse(400, {}, "All fields are required.")
+        )
     }
 
     if (phoneNumber.length != 10) {
-        throw new ApiError(401, "Invalid phone number")
+        return res.status(401).json(
+            new ApiResponse(401, {}, "Invalid phone number.")
+        )
     }
 
-    if(password !== confirmPassword){
-        throw new ApiError(401, "Password does not match with confirm password")
+    if (password !== confirmPassword) {
+        return res.status(401).json(
+            new ApiResponse(401, {}, "Password does not match with confirm password.")
+        )
     }
 
     // check if station already exists: username, phone number
@@ -44,22 +44,27 @@ const registerStation = asyncHandler(async (req, res, next) => {
     })
 
     if (stationExists) {
-        throw new ApiError(409, "Station with this username or phone number already exists")
+        return res.status(409).json(
+            new ApiResponse(409, {}, "Station with this username or phone number already exists")
+        )
     }
 
     // check for panCards
     const panCardLocalPath = req.files?.panCard[0]?.path;
 
     if (!panCardLocalPath) {
-        throw new ApiError(400, "Pan Card image is required")
+        return res.status(400).json(
+            new ApiResponse(400, {}, "Pan Card image is required.")
+        )
     }
 
     // upload them to cloudinary
     const panCard = await uploadOnCloudinary(panCardLocalPath)
 
-    console.log("reached here")
     if (!panCard) {
-        throw new ApiError(400, "Could not upload pan card. Try again.")
+        return res.status(400).json(
+            new ApiResponse(400, {}, "Could not upload pan card. Try again.")
+        )
     }
 
 
@@ -83,7 +88,9 @@ const registerStation = asyncHandler(async (req, res, next) => {
 
     // check for station creation
     if (!createdStation) {
-        throw new ApiError(500, "Something went wrong while registering station")
+        return res.status(500).json(
+            new ApiResponse(500, createdStation, "Something went wrong while registering station.")
+        )
     }
 
     // return res   
@@ -92,17 +99,33 @@ const registerStation = asyncHandler(async (req, res, next) => {
     )
 })
 
-const loginStation= asyncHandler(async (req, res, next) => {
+const loginStation = asyncHandler(async (req, res, next) => {
     //extract data from req.body
     const { username, password, phoneNumber } = req.body;
 
     //check if username email, phone number is entered
     if (!username && !phoneNumber) {
-        throw new ApiError(400, "Username or phone number is required");
+        return res
+            .status(400)
+            .json(
+                new ApiResponse(
+                    400,
+                    {},
+                    "Username or phone number is required"
+                )
+            )
     }
 
     if (phoneNumber && phoneNumber.length != 10) {
-        throw new ApiError(401, "Invalid phone number")
+        return res
+            .status(401)
+            .json(
+                new ApiResponse(
+                    401,
+                    {},
+                    "Invalid phone number"
+                )
+            )
     }
 
     //Check if station is registered
@@ -111,20 +134,36 @@ const loginStation= asyncHandler(async (req, res, next) => {
     })
 
     if (!station) {
-        throw new ApiError(404, "Station does not exist")
+        return res
+            .status(404)
+            .json(
+                new ApiResponse(
+                    404,
+                    {},
+                    "Station does not exist"
+                )
+            )
     }
 
     //Check password
     const isPasswordValid = await station.isPasswordCorrect(password)
 
     if (!isPasswordValid) {
-        throw new ApiError(401, "Incorrect station credentials")
+        return res
+            .status(401)
+            .json(
+                new ApiResponse(
+                    401,
+                    {},
+                    "Incorrect station credentials"
+                )
+            )
     }
 
     //access and refresh tokens
     const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(station._id)
 
-    const loggedInStation= await Station.findById(station._id).select("-password -refreshToken")
+    const loggedInStation = await Station.findById(station._id).select("-password -refreshToken")
 
     //send cookie
     const options = {
@@ -181,48 +220,69 @@ const logoutStation = asyncHandler(async (req, res) => {
 })
 
 const refreshAccessToken = asyncHandler(async (req, res) => {
-    try {
-        const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken
 
-        if (!incomingRefreshToken) {
-            throw new ApiError(401, "Unauthorized request")
-        }
+    const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken
 
-        const decodedToken = Jwt.verify(incomingRefreshToken, process.env.STATION_REFRESH_TOKEN_SECRET)
-
-        const station = await Station.findById(decodedToken?._id)
-        if (!station) {
-            throw new ApiError(401, "Invalid refresh token")
-        }
-
-        if (incomingRefreshToken !== station.refreshToken) {
-            throw new ApiError(401, "Refresh token is expired or used")
-        }
-
-        const options = {
-            httpOnly: true,
-            secure: true
-        }
-
-        const { accessToken, newrefreshToken } = await generateAccessAndRefreshTokens(station._id)
-
+    if (!incomingRefreshToken) {
         return res
-            .status(200)
-            .cookie("accessToken", accessToken, options)
-            .cookie("refreshToken", newrefreshToken, options)
+            .status(401)
             .json(
                 new ApiResponse(
-                    200,
-                    {
-                        accessToken,
-                        refreshToken: newrefreshToken
-                    },
-                    "Access token refreshed"
+                    401,
+                    {},
+                    "Unauthorized request"
                 )
             )
-    } catch (error) {
-        throw new ApiError(401, error?.message || "Invalid refresh token")
     }
+
+    const decodedToken = Jwt.verify(incomingRefreshToken, process.env.STATION_REFRESH_TOKEN_SECRET)
+
+    const station = await Station.findById(decodedToken?._id)
+    if (!station) {
+        return res
+            .status(401)
+            .json(
+                new ApiResponse(
+                    401,
+                    {},
+                    "Invalid refresh token"
+                )
+            )
+    }
+
+    if (incomingRefreshToken !== station.refreshToken) {
+        return res
+            .status(401)
+            .json(
+                new ApiResponse(
+                    401,
+                    {},
+                    "Refresh token is expired or used"
+                )
+            )
+    }
+
+    const options = {
+        httpOnly: true,
+        secure: true
+    }
+
+    const { accessToken, newrefreshToken } = await generateAccessAndRefreshTokens(station._id)
+
+    return res
+        .status(200)
+        .cookie("accessToken", accessToken, options)
+        .cookie("refreshToken", newrefreshToken, options)
+        .json(
+            new ApiResponse(
+                200,
+                {
+                    accessToken,
+                    refreshToken: newrefreshToken
+                },
+                "Access token refreshed"
+            )
+        )
 })
 
 const changeCurrentPassword = asyncHandler(async (req, res) => {
@@ -233,7 +293,13 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
     const isPasswordCorrect = await station.isPasswordCorrect(oldPassword)
 
     if (!isPasswordCorrect) {
-        throw new ApiError(400, "Invalid password")
+        return res
+            .status(400)
+            .json(new ApiResponse(
+                400,
+                {},
+                "Invalid password"
+            ))
     }
 
     station.password = newPassword
@@ -263,11 +329,26 @@ const updateStationDetails = asyncHandler(async (req, res) => {
     console.log(name, username, phoneNumber)
 
     if (!name || !username || !phoneNumber) {
-        throw new ApiError(400, "All fields are required")
+        return res
+            .status(400)
+            .json(new ApiResponse(
+                400,
+                {},
+                "All fields are required"
+            )
+            )
     }
 
     if (phoneNumber.length != 10) {
-        throw new ApiError(401, "Invalid phone number")
+        return res
+            .status(401)
+            .json(
+                new ApiResponse(
+                    401,
+                    {},
+                    "Invalid phone number"
+                )
+            )
     }
 
     const station = await Station.findByIdAndUpdate(
@@ -284,13 +365,14 @@ const updateStationDetails = asyncHandler(async (req, res) => {
 
     return res
         .status(200)
-        .json(new ApiResponse(
-            200,
-            {
-                station
-            },
-            "Account details updated successfully"
-        )
+        .json(
+            new ApiResponse(
+                200,
+                {
+                    station
+                },
+                "Account details updated successfully"
+            )
         )
 })
 
@@ -298,13 +380,25 @@ const updatePanCard = asyncHandler(async (req, res) => {
     const panCardLocalPath = req.file?.path
 
     if (!panCardLocalPath) {
-        throw new ApiError(400, "Pan Card image is missing")
+        return res
+            .status(400)
+            .json(
+                new ApiResponse(
+                    400, {}, "Pan Card image is missing"
+                )
+            )
     }
 
     const panCard = await uploadOnCloudinary(panCardLocalPath)
 
     if (!panCard) {
-        throw new ApiError(400, "Error while uploading pan card")
+        return res
+            .status(400)
+            .json(
+                new ApiResponse(
+                    400, {}, "Error while uploading pan card"
+                )
+            )
     }
 
     const station = await Station.findByIdAndUpdate(
@@ -321,7 +415,7 @@ const updatePanCard = asyncHandler(async (req, res) => {
         .status(200)
         .json(
             new ApiResponse(
-                200, station, "pan card updated successfully"
+                200, station, "Pan card updated successfully"
             )
         )
 })
