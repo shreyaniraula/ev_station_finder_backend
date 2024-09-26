@@ -4,12 +4,7 @@ import { uploadOnCloudinary } from '../utils/cloudinary.js'
 import Jwt from 'jsonwebtoken'
 import { ApiResponse } from '../utils/apiResponse.js'
 
-
 //TODO: apply otp
-const validateEmail = (email) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email)
-}
 
 // const verifyOTP = asyncHandler(async (phoneNumber) => {
 //     const accountSid = process.env.TWILIO_SID;
@@ -26,7 +21,7 @@ const generateAccessAndRefreshTokens = async (userId) => {
         const user = await User.findOne(userId)
         const accessToken = user.generateAccessToken()
         const refreshToken = user.generateRefreshToken()
-    
+
         user.refreshToken = refreshToken
         await user.save({ validateBeforeSave: false })
         return { refreshToken, accessToken }
@@ -36,19 +31,13 @@ const generateAccessAndRefreshTokens = async (userId) => {
 }
 
 const registerUser = asyncHandler(async (req, res, next) => {
-    const { fullName, username, password, confirmPassword, phoneNumber, email } = req.body;
+    const { fullName, password, phoneNumber } = req.body;
 
-    if ([fullName, username, password, confirmPassword, phoneNumber, email].some((field) =>
+    if ([fullName, password, phoneNumber].some((field) =>
         field?.trim === ""
     )) {
         return res.status(400).json(
             new ApiResponse(400, {}, "All fields are required")
-        )
-    }
-
-    if (!validateEmail(email)) {
-        return res.status(401).json(
-            new ApiResponse(401, {}, "Invalid email")
         )
     }
 
@@ -58,20 +47,12 @@ const registerUser = asyncHandler(async (req, res, next) => {
         )
     }
 
-    if (password !== confirmPassword) {
-        return res.status(401).json(
-            new ApiResponse(401, {}, "Password does not match with confirm password")
-        )
-    }
-
-    // check if user already exists: username, email
-    const userExists = await User.findOne({
-        $or: [{ username }, { phoneNumber }, { email }]
-    })
+    // check if user already exists: , 
+    const userExists = await User.findOne({ phoneNumber })
 
     if (userExists) {
         return res.status(409).json(
-            new ApiResponse(409, {}, "User with this email, username or phone number already exists")
+            new ApiResponse(409, {}, "User with this phone number already exists")
         )
     }
 
@@ -96,11 +77,9 @@ const registerUser = asyncHandler(async (req, res, next) => {
     // create user object - create entry in db
     const user = await User.create({
         fullName,
-        username: username.toLowerCase(),
         password,
         phoneNumber,
         image: image.url,
-        email,
     })
 
     // remove password and refresh token field from response
@@ -122,34 +101,22 @@ const registerUser = asyncHandler(async (req, res, next) => {
 
 const loginUser = asyncHandler(async (req, res, next) => {
     //extract data from req.body
-    const { username, password, phoneNumber, email } = req.body;
+    const { phoneNumber, password } = req.body;
 
-    //check if username email, phone number is entered
-    if (!username && !email && !phoneNumber) {
+    //check if phone number is entered
+    if (!phoneNumber) {
         return res
             .status(400)
             .json(
                 new ApiResponse(
                     400,
                     {},
-                    "Username, email, or phone number is required"
+                    "Phone number is required"
                 )
             )
     }
 
-    if (email && !validateEmail(email)) {
-        return res
-            .status(401)
-            .json(
-                new ApiResponse(
-                    401,
-                    {},
-                    "Invalid email"
-                )
-            )
-    }
-
-    if (phoneNumber && phoneNumber.length != 10) {
+    if (phoneNumber.length != 10) {
         return res
             .status(401)
             .json(
@@ -162,9 +129,7 @@ const loginUser = asyncHandler(async (req, res, next) => {
     }
 
     //Check if user is registered
-    const user = await User.findOne({
-        $or: [{ username }, { email }, { phoneNumber }]
-    })
+    const user = await User.findOne({ phoneNumber })
 
     if (!user) {
         return res
@@ -352,9 +317,9 @@ const getCurrentUser = asyncHandler(async (req, res) => {
 })
 
 const updateUserDetails = asyncHandler(async (req, res) => {
-    const { fullName, username, email, phoneNumber } = req.body
+    const { fullName, phoneNumber } = req.body
 
-    if (!fullName || !username || !email || !phoneNumber) {
+    if (!fullName || !phoneNumber) {
         return res
             .status(400)
             .json(
@@ -362,18 +327,6 @@ const updateUserDetails = asyncHandler(async (req, res) => {
                     400,
                     {},
                     "All fields are required"
-                )
-            )
-    }
-
-    if (!validateEmail(email)) {
-        return res
-            .status(401)
-            .json(
-                new ApiResponse(
-                    401,
-                    {},
-                    "Invalid email"
                 )
             )
     }
@@ -395,8 +348,6 @@ const updateUserDetails = asyncHandler(async (req, res) => {
         {
             $set: {
                 fullName,
-                username,
-                email,
                 phoneNumber,
             },
         },
