@@ -420,4 +420,13 @@ const updatePanCard = asyncHandler(async (req, res) => {
         )
 })
 
-export { refreshAccessToken, registerStation, loginStation, logoutStation, changeCurrentPassword, getCurrentStation, updateStationDetails, updatePanCard }
+export {
+    refreshAccessToken,
+    registerStation,
+    loginStation,
+    logoutStation,
+    changeCurrentPassword,
+    getCurrentStation,
+    updateStationDetails,
+    updatePanCard
+}

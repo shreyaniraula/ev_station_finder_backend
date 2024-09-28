@@ -126,4 +126,10 @@ const viewReservations = asyncHandler(async (req, res) => {
     )
 })
 
-export { addReservation, updateReservation, cancelReservation, viewReservations }
+export {
+    addReservation,
+    updateReservation,
+    cancelReservation,
+    viewReservations
+
+}

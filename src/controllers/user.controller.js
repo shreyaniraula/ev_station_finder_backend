@@ -101,35 +101,23 @@ const registerUser = asyncHandler(async (req, res, next) => {
 
 const loginUser = asyncHandler(async (req, res, next) => {
     //extract data from req.body
-    const { phoneNumber, password } = req.body;
+    const { username, password } = req.body;
 
     //check if phone number is entered
-    if (!phoneNumber) {
+    if (!username || !password) {
         return res
             .status(400)
             .json(
                 new ApiResponse(
                     400,
                     {},
-                    "Phone number is required"
-                )
-            )
-    }
-
-    if (phoneNumber.length != 10) {
-        return res
-            .status(401)
-            .json(
-                new ApiResponse(
-                    401,
-                    {},
-                    "Invalid phone number"
+                    "All fields are required"
                 )
             )
     }
 
     //Check if user is registered
-    const user = await User.findOne({ phoneNumber })
+    const user = await User.findOne({ username })
 
     if (!user) {
         return res
@@ -300,11 +288,13 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
 
     return res
         .status(200)
-        .json(new ApiResponse(
-            200,
-            {},
-            "Password changed successfully"
-        ))
+        .json(
+            new ApiResponse(
+                200,
+                {},
+                "Password changed successfully"
+            )
+        )
 })
 
 const getCurrentUser = asyncHandler(async (req, res) => {
@@ -415,4 +405,13 @@ const updateImage = asyncHandler(async (req, res) => {
         )
 })
 
-export { registerUser, loginUser, logoutUser, changeCurrentPassword, updateImage, updateUserDetails, getCurrentUser, refreshAccessToken }
+export {
+    registerUser,
+    loginUser,
+    logoutUser,
+    changeCurrentPassword,
+    updateImage,
+    updateUserDetails,
+    getCurrentUser,
+    refreshAccessToken
+}

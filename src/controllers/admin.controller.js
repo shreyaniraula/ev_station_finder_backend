@@ -54,4 +54,8 @@ const verifyStation = asyncHandler(async (req, res, next) => {
         )
 })
 
-export { loginAdmin, logoutAdmin, refreshAccessToken, getUnverifiedStations, verifyStation }
+export {
+    getUnverifiedStations,
+    verifyStation
+
+}
