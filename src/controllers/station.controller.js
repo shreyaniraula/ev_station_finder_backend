@@ -16,9 +16,9 @@ const generateAccessAndRefreshTokens = asyncHandler(async (stationId) => {
 })
 
 const registerStation = asyncHandler(async (req, res, next) => {
-    const { name, username, password, confirmPassword, phoneNumber, location, noOfSlots } = req.body;
+    const { name, username, password, phoneNumber, location, noOfSlots, panCard } = req.body;
 
-    if ([name, username, password, confirmPassword, phoneNumber, location, noOfSlots].some((field) =>
+    if ([name, username, password, phoneNumber, location, noOfSlots, panCard].some((field) =>
         field?.trim === ""
     )) {
         return res.status(400).json(
@@ -29,12 +29,6 @@ const registerStation = asyncHandler(async (req, res, next) => {
     if (phoneNumber.length != 10) {
         return res.status(401).json(
             new ApiResponse(401, {}, "Invalid phone number.")
-        )
-    }
-
-    if (password !== confirmPassword) {
-        return res.status(401).json(
-            new ApiResponse(401, {}, "Password does not match with confirm password.")
         )
     }
 
@@ -49,24 +43,6 @@ const registerStation = asyncHandler(async (req, res, next) => {
         )
     }
 
-    // check for panCards
-    const panCardLocalPath = req.files?.panCard[0]?.path;
-
-    if (!panCardLocalPath) {
-        return res.status(400).json(
-            new ApiResponse(400, {}, "Pan Card image is required.")
-        )
-    }
-
-    // upload them to cloudinary
-    const panCard = await uploadOnCloudinary(panCardLocalPath)
-
-    if (!panCard) {
-        return res.status(400).json(
-            new ApiResponse(400, {}, "Could not upload pan card. Try again.")
-        )
-    }
-
 
     // create station object - create entry in db
     const station = await Station.create({
@@ -74,7 +50,7 @@ const registerStation = asyncHandler(async (req, res, next) => {
         username: username.toLowerCase(),
         password,
         phoneNumber,
-        panCard: panCard.url,
+        panCard,
         location,
         noOfSlots,
         isVerified: false,
@@ -94,7 +70,7 @@ const registerStation = asyncHandler(async (req, res, next) => {
     }
 
     // return res   
-    return res.status(201).json(
+    return res.status(200).json(
         new ApiResponse(200, createdStation, "Station registered successfully. Please wait for verification.")
     )
 })
