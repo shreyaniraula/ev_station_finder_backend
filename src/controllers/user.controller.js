@@ -31,9 +31,9 @@ const generateAccessAndRefreshTokens = async (userId) => {
 }
 
 const registerUser = asyncHandler(async (req, res, next) => {
-    const { fullName, password, phoneNumber } = req.body;
+    const { username, fullName, password, phoneNumber, image } = req.body;
 
-    if ([fullName, password, phoneNumber].some((field) =>
+    if ([username, fullName, password, phoneNumber, image].some((field) =>
         field?.trim === ""
     )) {
         return res.status(400).json(
@@ -48,38 +48,41 @@ const registerUser = asyncHandler(async (req, res, next) => {
     }
 
     // check if user already exists: , 
-    const userExists = await User.findOne({ phoneNumber })
+    const userExists = await User.findOne({
+        $or: [{ username }, { phoneNumber }]
+    })
 
     if (userExists) {
         return res.status(409).json(
-            new ApiResponse(409, {}, "User with this phone number already exists")
+            new ApiResponse(409, {}, "User with this username or phone number already exists")
         )
     }
 
     // check for images
-    const imageLocalPath = req.files?.image[0]?.path;
+    // const imageLocalPath = req.files?.image[0]?.path;
 
-    if (!imageLocalPath) {
-        return res.status(400).json(
-            new ApiResponse(400, {}, "Image is required")
-        )
-    }
+    // if (!imageLocalPath) {
+    //     return res.status(400).json(
+    //         new ApiResponse(400, {}, "Image is required")
+    //     )
+    // }
 
-    // upload them to cloudinary
-    const image = await uploadOnCloudinary(imageLocalPath)
+    // // upload them to cloudinary
+    // const image = await uploadOnCloudinary(imageLocalPath)
 
-    if (!image) {
-        return res.status(400).json(
-            new ApiResponse(400, {}, "Could not upload image. Try again.")
-        )
-    }
+    // if (!image) {
+    //     return res.status(400).json(
+    //         new ApiResponse(400, {}, "Could not upload image. Try again.")
+    //     )
+    // }
 
     // create user object - create entry in db
     const user = await User.create({
+        username,
         fullName,
         password,
         phoneNumber,
-        image: image.url,
+        image,
     })
 
     // remove password and refresh token field from response
