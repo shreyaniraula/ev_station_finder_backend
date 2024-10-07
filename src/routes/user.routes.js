@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { getCurrentUser, loginUser, logoutUser, refreshAccessToken, registerUser, updateImage, updateUserDetails } from '../controllers/user.controller.js'
+import { getCurrentUser, loginUser, logoutUser, refreshAccessToken, registerUser, updateImage, updateUserDetails, verifyToken } from '../controllers/user.controller.js'
 import { upload } from '../middlewares/multer.middleware.js'
 import { verifyUserJWT } from '../middlewares/userAuth.middleware.js'
 
@@ -21,5 +21,6 @@ userRouter.route('/update-image').patch(verifyUserJWT, upload.single("image"), u
 userRouter.route('/update-account').post(verifyUserJWT, updateUserDetails)
 userRouter.route('/refresh-token').post(refreshAccessToken)
 userRouter.route('/current-user').get(verifyUserJWT, getCurrentUser)
+userRouter.route('/token-is-valid').post(verifyToken)
 
 export default userRouter

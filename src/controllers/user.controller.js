@@ -3,6 +3,7 @@ import { User } from '../models/user.model.js'
 import { uploadOnCloudinary } from '../utils/cloudinary.js'
 import Jwt from 'jsonwebtoken'
 import { ApiResponse } from '../utils/apiResponse.js'
+import jwt from 'jsonwebtoken'
 
 //TODO: apply otp
 
@@ -57,24 +58,6 @@ const registerUser = asyncHandler(async (req, res, next) => {
             new ApiResponse(409, {}, "User with this username or phone number already exists")
         )
     }
-
-    // check for images
-    // const imageLocalPath = req.files?.image[0]?.path;
-
-    // if (!imageLocalPath) {
-    //     return res.status(400).json(
-    //         new ApiResponse(400, {}, "Image is required")
-    //     )
-    // }
-
-    // // upload them to cloudinary
-    // const image = await uploadOnCloudinary(imageLocalPath)
-
-    // if (!image) {
-    //     return res.status(400).json(
-    //         new ApiResponse(400, {}, "Could not upload image. Try again.")
-    //     )
-    // }
 
     // create user object - create entry in db
     const user = await User.create({
@@ -301,12 +284,10 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
 })
 
 const getCurrentUser = asyncHandler(async (req, res) => {
+    const user = await User.findById(req.user)
     return res
         .status(200)
-        .json(
-            new ApiResponse(200, req.user, "User fetched successfully"
-            )
-        )
+        .json({ ...user._doc, token: req.token })
 })
 
 const updateUserDetails = asyncHandler(async (req, res) => {
@@ -408,6 +389,17 @@ const updateImage = asyncHandler(async (req, res) => {
         )
 })
 
+const verifyToken = asyncHandler(async (req, res) => {
+    const token = req.header("x-auth-token")
+    if (!token) return res.json(false)
+    const verified = Jwt.verify(token, process.env.USER_ACCESS_TOKEN_SECRET)
+    if (!verified) return res.json(false)
+
+    const user = await User.findById(verified.id)
+    if (!user) return res.json(false)
+    res.json(true)
+})
+
 export {
     registerUser,
     loginUser,
@@ -416,5 +408,6 @@ export {
     updateImage,
     updateUserDetails,
     getCurrentUser,
-    refreshAccessToken
+    refreshAccessToken,
+    verifyToken
 }
