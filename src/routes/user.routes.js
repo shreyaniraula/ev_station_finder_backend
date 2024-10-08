@@ -21,6 +21,6 @@ userRouter.route('/update-image').patch(verifyUserJWT, upload.single("image"), u
 userRouter.route('/update-account').post(verifyUserJWT, updateUserDetails)
 userRouter.route('/refresh-token').post(refreshAccessToken)
 userRouter.route('/current-user').get(verifyUserJWT, getCurrentUser)
-userRouter.route('/token-is-valid').post(verifyToken)
+userRouter.route('/token-is-valid').get(verifyToken)
 
 export default userRouter

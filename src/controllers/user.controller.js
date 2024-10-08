@@ -3,7 +3,6 @@ import { User } from '../models/user.model.js'
 import { uploadOnCloudinary } from '../utils/cloudinary.js'
 import Jwt from 'jsonwebtoken'
 import { ApiResponse } from '../utils/apiResponse.js'
-import jwt from 'jsonwebtoken'
 
 //TODO: apply otp
 
@@ -25,7 +24,7 @@ const generateAccessAndRefreshTokens = async (userId) => {
 
         user.refreshToken = refreshToken
         await user.save({ validateBeforeSave: false })
-        return { refreshToken, accessToken }
+        return { accessToken, refreshToken }
     } catch (error) {
         console.log(error);
     }
@@ -125,7 +124,9 @@ const loginUser = asyncHandler(async (req, res, next) => {
     }
 
     //access and refresh tokens
-    const { accessToken, refreshToken } = generateAccessAndRefreshTokens(user._id)
+    const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user._id)
+
+    const token = Jwt.sign(accessToken, "accessToken")
 
     const loggedInUser = await User.findById(user._id).select("-password -refreshToken")
 
@@ -395,7 +396,7 @@ const verifyToken = asyncHandler(async (req, res) => {
     const verified = Jwt.verify(token, process.env.USER_ACCESS_TOKEN_SECRET)
     if (!verified) return res.json(false)
 
-    const user = await User.findById(verified.id)
+    const user = await User.findById(verified._id)
     if (!user) return res.json(false)
     res.json(true)
 })
