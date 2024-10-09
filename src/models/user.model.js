@@ -21,7 +21,7 @@ const userSchema = new Schema({
         required: [true, "Password is required"],
     },
     phoneNumber: {
-        type: Number,
+        type: String,
         required: true,
         unique: true,
     },

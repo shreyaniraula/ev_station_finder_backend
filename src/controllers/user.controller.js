@@ -126,7 +126,7 @@ const loginUser = asyncHandler(async (req, res, next) => {
     //access and refresh tokens
     const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user._id)
 
-    const token = Jwt.sign(accessToken, "accessToken")
+    Jwt.sign(accessToken, "accessToken")
 
     const loggedInUser = await User.findById(user._id).select("-password -refreshToken")
 
@@ -145,7 +145,7 @@ const loginUser = asyncHandler(async (req, res, next) => {
             new ApiResponse(
                 200,
                 {
-                    user: loggedInUser, accessToken, refreshToken
+                   accessToken, ...user._doc
                 },
                 "User logged in successfully"
             )
