@@ -145,7 +145,7 @@ const loginUser = asyncHandler(async (req, res, next) => {
             new ApiResponse(
                 200,
                 {
-                   accessToken, ...user._doc
+                    accessToken, ...user._doc
                 },
                 "User logged in successfully"
             )
@@ -288,7 +288,7 @@ const getCurrentUser = asyncHandler(async (req, res) => {
     const user = await User.findById(req.user)
     return res
         .status(200)
-        .json({ ...user._doc, token: req.token })
+        .json({ ...user._doc, accessToken: req.token })
 })
 
 const updateUserDetails = asyncHandler(async (req, res) => {
@@ -391,7 +391,7 @@ const updateImage = asyncHandler(async (req, res) => {
 })
 
 const verifyToken = asyncHandler(async (req, res) => {
-    const token = req.header("x-auth-token")
+    const token = req.header('x-auth-token')
     if (!token) return res.json(false)
     const verified = Jwt.verify(token, process.env.USER_ACCESS_TOKEN_SECRET)
     if (!verified) return res.json(false)
