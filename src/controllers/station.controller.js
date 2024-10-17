@@ -291,11 +291,18 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
         ))
 })
 
-const getCurrentStation = asyncHandler(async (req, res) => {
+const getStationDetails = asyncHandler(async (req, res) => {
+    const {stationUsername} = req.header('stationUsername')
+
+    const stationDetails = await Station.findOne(stationUsername).select('-password -refreshToken')
+
+    if(!stationDetails){
+        return res.status(500).json(new ApiResponse(500, {}, "Something went wrong while fetching station details."))
+    }
     return res
         .status(200)
         .json(
-            new ApiResponse(200, req.station, "Station fetched successfully"
+            new ApiResponse(200, stationDetails, "Station fetched successfully"
             )
         )
 })
@@ -402,7 +409,7 @@ export {
     loginStation,
     logoutStation,
     changeCurrentPassword,
-    getCurrentStation,
+    getStationDetails,
     updateStationDetails,
     updatePanCard
 }
