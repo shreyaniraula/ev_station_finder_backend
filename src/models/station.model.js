@@ -30,6 +30,10 @@ const stationSchema = new Schema({
         type: String,   //cloudinary url
         required: true,
     },
+    stationImage: {
+        type: String,   //cloudinary url
+        required: true,
+    },
     noOfSlots: {
         type: Number,
         required: true,

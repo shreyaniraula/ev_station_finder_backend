@@ -16,9 +16,9 @@ const generateAccessAndRefreshTokens = asyncHandler(async (stationId) => {
 })
 
 const registerStation = asyncHandler(async (req, res, next) => {
-    const { name, username, password, phoneNumber, location, noOfSlots, panCard } = req.body;
+    const { name, username, password, phoneNumber, location, noOfSlots, panCard, stationImage } = req.body;
 
-    if ([name, username, password, phoneNumber, location, noOfSlots, panCard].some((field) =>
+    if ([name, username, password, phoneNumber, location, noOfSlots, panCard, stationImage].some((field) =>
         field?.trim === ""
     )) {
         return res.status(400).json(
@@ -51,6 +51,7 @@ const registerStation = asyncHandler(async (req, res, next) => {
         password,
         phoneNumber,
         panCard,
+        stationImage,
         location,
         noOfSlots,
         isVerified: false,
