@@ -1,8 +1,9 @@
 import { User } from "../models/user.model.js";
+import { ApiResponse } from "../utils/apiResponse.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import Jwt from "jsonwebtoken";
 
-export const verifyUserJWT = asyncHandler(async (req, _, next) => {
+export const verifyUserJWT = asyncHandler(async (req, res, next) => {
     const token = req.header("x-auth-token")
 
     if (!token) {

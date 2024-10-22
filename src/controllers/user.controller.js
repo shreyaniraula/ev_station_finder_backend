@@ -343,9 +343,9 @@ const updateUserDetails = asyncHandler(async (req, res) => {
 })
 
 const updateImage = asyncHandler(async (req, res) => {
-    const imageLocalPath = req.file?.path
+    const {imageUrl} = req.body
 
-    if (!imageLocalPath) {
+    if (!imageUrl) {
         return res
             .status(400)
             .json(
@@ -357,25 +357,11 @@ const updateImage = asyncHandler(async (req, res) => {
             )
     }
 
-    const image = await uploadOnCloudinary(imageLocalPath)
-
-    if (!image) {
-        return res
-            .status(400)
-            .json(
-                new ApiResponse(
-                    400,
-                    {},
-                    "Error while uploading image"
-                )
-            )
-    }
-
     const user = await User.findByIdAndUpdate(
         req.user._id,
         {
             $set: {
-                image: image.url
+                image: imageUrl
             }
         },
         { new: true }
