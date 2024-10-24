@@ -405,7 +405,7 @@ const updatePanCard = asyncHandler(async (req, res) => {
 })
 
 const getAllStations = asyncHandler(async (req, res) => {
-    const stations = await Station.find()
+    const stations = await Station.find().select('-password')
 
     if (!stations || stations.length == 0) {
         return res.status(400).json(
