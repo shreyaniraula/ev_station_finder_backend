@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { getStationDetails, loginStation, logoutStation, refreshAccessToken, registerStation, updatePanCard, updateStationDetails } from '../controllers/station.controller.js'
+import { getAllStations, getStationDetails, loginStation, logoutStation, refreshAccessToken, registerStation, updatePanCard, updateStationDetails } from '../controllers/station.controller.js'
 import { upload } from '../middlewares/multer.middleware.js'
 import { verifyStationJWT } from '../middlewares/stationAuth.middleware.js'
 
@@ -21,5 +21,6 @@ stationRouter.route('/update-pan-card').patch(verifyStationJWT, upload.single("p
 stationRouter.route('/update-account').post(verifyStationJWT, updateStationDetails)
 stationRouter.route('/refresh-token').post(refreshAccessToken)
 stationRouter.route('/station-details').get(getStationDetails)
+stationRouter.route('/get-all-stations').get(getAllStations)
 
 export default stationRouter
