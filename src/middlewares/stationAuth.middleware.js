@@ -3,8 +3,8 @@ import { ApiResponse } from "../utils/apiResponse.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import Jwt from "jsonwebtoken";
 
-export const verifyStationJWT = asyncHandler(async (req, _, next) => {
-    const token = req.cookies?.accessToken || req.header("Authorization")?.replace("Bearer ", "")
+export const verifyStationJWT = asyncHandler(async (req, res, next) => {
+    const token = req.header("x-auth-token")
 
     if (!token) {
         res.status(401).json(

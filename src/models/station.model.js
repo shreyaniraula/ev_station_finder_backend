@@ -67,7 +67,6 @@ stationSchema.methods.generateAccessToken = function () {
     return jwt.sign(
         {
             _id: this._id,
-            phoneNumber: this.phoneNumber,
             username: this.username,
             name: this.name
         },

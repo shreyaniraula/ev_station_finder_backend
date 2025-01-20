@@ -4,16 +4,19 @@ import Jwt from 'jsonwebtoken'
 import { ApiResponse } from '../utils/apiResponse.js'
 import { Station } from '../models/station.model.js'
 
-const generateAccessAndRefreshTokens = asyncHandler(async (stationId) => {
+const generateAccessAndRefreshTokens = async (stationId) => {
+    try {
+        const station = await Station.findOne(stationId)
+        const accessToken = station.generateAccessToken()
+        const refreshToken = station.generateRefreshToken()
 
-    const station = await Station.findOne(stationId)
-    const accessToken = station.generateAccessToken()
-    const refreshToken = station.generateRefreshToken()
-
-    station.refreshToken = refreshToken
-    await station.save({ validateBeforeSave: false })
-    return { refreshToken, accessToken }
-})
+        station.refreshToken = refreshToken
+        await station.save({ validateBeforeSave: false })
+        return { refreshToken, accessToken }
+    } catch (e) {
+        console.log(e)
+    }
+}
 
 const registerStation = asyncHandler(async (req, res, next) => {
     const { name, username, password, phoneNumber, location, noOfSlots, panCard, stationImage } = req.body;
@@ -78,37 +81,23 @@ const registerStation = asyncHandler(async (req, res, next) => {
 
 const loginStation = asyncHandler(async (req, res, next) => {
     //extract data from req.body
-    const { username, password, phoneNumber } = req.body;
+    const { username, password } = req.body;
 
-    //check if username email, phone number is entered
-    if (!username && !phoneNumber) {
+    //check if username is entered
+    if (!username || !password) {
         return res
             .status(400)
             .json(
                 new ApiResponse(
                     400,
                     {},
-                    "Username or phone number is required"
-                )
-            )
-    }
-
-    if (phoneNumber && phoneNumber.length != 10) {
-        return res
-            .status(401)
-            .json(
-                new ApiResponse(
-                    401,
-                    {},
-                    "Invalid phone number"
+                    "All fields are required"
                 )
             )
     }
 
     //Check if station is registered
-    const station = await Station.findOne({
-        $or: [{ username }, { phoneNumber }]
-    })
+    const station = await Station.findOne({ username })
 
     if (!station) {
         return res
@@ -140,6 +129,8 @@ const loginStation = asyncHandler(async (req, res, next) => {
     //access and refresh tokens
     const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(station._id)
 
+    Jwt.sign(accessToken, "accessToken")
+
     const loggedInStation = await Station.findById(station._id).select("-password -refreshToken")
 
     //send cookie
@@ -157,7 +148,7 @@ const loginStation = asyncHandler(async (req, res, next) => {
             new ApiResponse(
                 200,
                 {
-                    station: loggedInStation, accessToken, refreshToken
+                    accessToken, ...station._doc
                 },
                 "Station logged in successfully"
             )
@@ -295,7 +286,7 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
 const getStationDetails = asyncHandler(async (req, res) => {
     const stationUsername = req.header('stationUsername')
 
-    const stationDetails = await Station.findOne({username: stationUsername}).select('-password -refreshToken')
+    const stationDetails = await Station.findOne({ username: stationUsername }).select('-password -refreshToken')
 
     if (!stationDetails) {
         return res.status(500).json(new ApiResponse(500, {}, "Something went wrong while fetching station details."))

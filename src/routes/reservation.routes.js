@@ -7,6 +7,6 @@ const reservationRouter = Router()
 
 reservationRouter.route('/reserve-station/:stationId').post(verifyUserJWT, addReservation)
 reservationRouter.route('/update-reservation').post(verifyStationJWT, updateReservation)
-reservationRouter.route('/view-reservation').post(verifyStationJWT, viewReservations)
+reservationRouter.route('/view-reservation').get(verifyStationJWT, viewReservations)
 
 export default reservationRouter
