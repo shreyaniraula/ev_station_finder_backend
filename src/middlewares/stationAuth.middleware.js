@@ -4,7 +4,7 @@ import asyncHandler from "../utils/asyncHandler.js";
 import Jwt from "jsonwebtoken";
 
 export const verifyStationJWT = asyncHandler(async (req, res, next) => {
-    const token = req.header("x-auth-token")
+    const token = req.header("station-auth-token")
 
     if (!token) {
         res.status(401).json(

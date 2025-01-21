@@ -377,7 +377,7 @@ const updateImage = asyncHandler(async (req, res) => {
 })
 
 const verifyToken = asyncHandler(async (req, res) => {
-    const token = req.header('x-auth-token')
+    const token = req.header('user-auth-token')
     if (!token) return res.json(false)
     const verified = Jwt.verify(token, process.env.USER_ACCESS_TOKEN_SECRET)
     if (!verified) return res.json(false)

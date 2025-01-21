@@ -284,7 +284,9 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
 })
 
 const getStationDetails = asyncHandler(async (req, res) => {
-    const stationUsername = req.header('stationUsername') || req.station?.username
+    const stationUsername = req.header('stationUsername')
+    console.log(req.header('stationUsername'))
+    console.log(req.station?.username)
 
     const stationDetails = await Station.findOne({ username: stationUsername }).select('-password -refreshToken')
 
@@ -415,7 +417,7 @@ const getAllStations = asyncHandler(async (req, res) => {
 })
 
 const verifyToken = asyncHandler(async (req, res) => {
-    const token = req.header('x-auth-token')
+    const token = req.header('station-auth-token')
     if (!token) return res.json(false)
     const verified = Jwt.verify(token, process.env.STATION_ACCESS_TOKEN_SECRET)
     if (!verified) return res.json(false)

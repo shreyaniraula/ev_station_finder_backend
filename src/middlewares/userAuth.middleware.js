@@ -4,7 +4,7 @@ import asyncHandler from "../utils/asyncHandler.js";
 import Jwt from "jsonwebtoken";
 
 export const verifyUserJWT = asyncHandler(async (req, res, next) => {
-    const token = req.header("x-auth-token")
+    const token = req.header("user-auth-token")
 
     if (!token) {
         res.status(401).json(
