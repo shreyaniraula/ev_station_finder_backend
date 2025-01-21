@@ -5,7 +5,7 @@ import { verifyStationJWT } from '../middlewares/stationAuth.middleware.js'
 
 const reservationRouter = Router()
 
-reservationRouter.route('/reserve-station/:stationId').post(verifyUserJWT, addReservation)
+reservationRouter.route('/reserve-station/:stationId').post(addReservation)
 reservationRouter.route('/update-reservation').post(verifyStationJWT, updateReservation)
 reservationRouter.route('/view-reservation').get(verifyStationJWT, viewReservations)
 

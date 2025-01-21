@@ -33,7 +33,7 @@ const updateReservation = asyncHandler(async (req, res) => {
 
 const addReservation = asyncHandler(async (req, res) => {
     const stationId = req.params.stationId
-    const userId = req.user._id
+    const userId = req.user?._id
 
     const { paymentAmount, startingTime, endingTime, remarks } = req.body
 
@@ -59,7 +59,7 @@ const addReservation = asyncHandler(async (req, res) => {
     }
 
     const reservation = await Reservation.create({
-        reservedBy: userId,
+        reservedBy: userId ? userId : stationId,
         reservedTo: stationId,
         paymentAmount,
         startingTime,
