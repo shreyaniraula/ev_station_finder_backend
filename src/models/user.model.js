@@ -6,7 +6,7 @@ import {
   REFRESH_TOKEN_EXPIRY,
   USER_ACCESS_TOKEN_SECRET,
   USER_REFRESH_TOKEN_SECRET,
-} from "../config";
+} from "../config/index.js";
 
 const userSchema = new Schema(
   {

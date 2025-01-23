@@ -6,7 +6,7 @@ import {
   REFRESH_TOKEN_EXPIRY,
   STATION_ACCESS_TOKEN_SECRET,
   STATION_REFRESH_TOKEN_SECRET,
-} from "../config";
+} from "../config/index.js";
 
 //TODO: apply type of chargers
 const stationSchema = new Schema(

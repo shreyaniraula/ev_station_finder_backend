@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import { CORS_ORIGIN } from "./config";
+import { CORS_ORIGIN } from "./config/index.js";
 const app = express();
 app.use(
   cors({
@@ -20,7 +20,6 @@ app.use(cookieParser());
 import userRouter from "./routes/user.routes.js";
 import stationRouter from "./routes/station.routes.js";
 import reservationRouter from "./routes/reservation.routes.js";
-import { CORS_ORIGIN } from "./config/index.js";
 
 //declare routes
 app.use("/api/v1/users", userRouter);

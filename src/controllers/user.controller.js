@@ -3,7 +3,7 @@ import { User } from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import Jwt from "jsonwebtoken";
 import { ApiResponse } from "../utils/apiResponse.js";
-import { USER_ACCESS_TOKEN_SECRET, USER_REFRESH_TOKEN_SECRET } from "../config";
+import { USER_ACCESS_TOKEN_SECRET, USER_REFRESH_TOKEN_SECRET } from "../config/index.js";
 
 //TODO: apply otp
 
