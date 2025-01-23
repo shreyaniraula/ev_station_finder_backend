@@ -3,6 +3,7 @@ import { uploadOnCloudinary } from '../utils/cloudinary.js'
 import Jwt from 'jsonwebtoken'
 import { ApiResponse } from '../utils/apiResponse.js'
 import { Station } from '../models/station.model.js'
+import { STATION_ACCESS_TOKEN_SECRET } from '../config/index.js'
 
 const generateAccessAndRefreshTokens = async (stationId) => {
     try {
@@ -203,7 +204,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
             )
     }
 
-    const decodedToken = Jwt.verify(incomingRefreshToken, process.env.STATION_REFRESH_TOKEN_SECRET)
+    const decodedToken = Jwt.verify(incomingRefreshToken,STATION_REFRESH_TOKEN_SECRET)
 
     const station = await Station.findById(decodedToken?._id)
     if (!station) {
@@ -419,7 +420,7 @@ const getAllStations = asyncHandler(async (req, res) => {
 const verifyToken = asyncHandler(async (req, res) => {
     const token = req.header('station-auth-token')
     if (!token) return res.json(false)
-    const verified = Jwt.verify(token, process.env.STATION_ACCESS_TOKEN_SECRET)
+    const verified = Jwt.verify(token, STATION_ACCESS_TOKEN_SECRET)
     if (!verified) return res.json(false)
 
     const user = await Station.findById(verified._id)
