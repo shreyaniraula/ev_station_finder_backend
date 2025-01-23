@@ -292,21 +292,32 @@ const getCurrentUser = asyncHandler(async (req, res) => {
 })
 
 const updateUserDetails = asyncHandler(async (req, res) => {
-    const { fullName, phoneNumber } = req.body
+    const { username, fullName, phoneNumber } = req.body
+    console.log(username)
 
-    if (!fullName || !phoneNumber) {
+    if (!username && !fullName && !phoneNumber) {
         return res
             .status(400)
             .json(
                 new ApiResponse(
                     400,
                     {},
-                    "All fields are required"
+                    "At least one field is required"
                 )
             )
     }
 
-    if (phoneNumber.length != 10) {
+    const userExists = await User.findOne({
+        $or: [{ username }, { phoneNumber }]
+    })
+
+    if (userExists) {
+        return res.status(409).json(
+            new ApiResponse(409, {}, "User with this username or phone number already exists")
+        )
+    }
+
+    if (phoneNumber && phoneNumber.length != 10) {
         return res
             .status(401)
             .json(
@@ -343,7 +354,7 @@ const updateUserDetails = asyncHandler(async (req, res) => {
 })
 
 const updateImage = asyncHandler(async (req, res) => {
-    const {imageUrl} = req.body
+    const { imageUrl } = req.body
 
     if (!imageUrl) {
         return res
