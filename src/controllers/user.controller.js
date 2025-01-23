@@ -1,9 +1,15 @@
 import asyncHandler from "../utils/asyncHandler.js";
+import * as url from "url";
+const __dirname = url.fileURLToPath(new URL(".", import.meta.url));
+import path from "path";
 import { User } from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import Jwt from "jsonwebtoken";
 import { ApiResponse } from "../utils/apiResponse.js";
-import { USER_ACCESS_TOKEN_SECRET, USER_REFRESH_TOKEN_SECRET } from "../config/index.js";
+import {
+  USER_ACCESS_TOKEN_SECRET,
+  USER_REFRESH_TOKEN_SECRET,
+} from "../config/index.js";
 
 //TODO: apply otp
 
@@ -32,10 +38,16 @@ const generateAccessAndRefreshTokens = async (userId) => {
 };
 
 const registerUser = asyncHandler(async (req, res, next) => {
-  const { username, fullName, password, phoneNumber, image } = req.body;
+  const { username, fullName, password, phoneNumber } = req.body;
+  const file = req.files;
+  const filePath = path.join(
+    __dirname,
+    "../../public/images",
+    file.image[0].originalname
+  );
 
   if (
-    [username, fullName, password, phoneNumber, image].some(
+    [username, fullName, password, phoneNumber].some(
       (field) => field?.trim === ""
     )
   ) {
@@ -67,13 +79,16 @@ const registerUser = asyncHandler(async (req, res, next) => {
       );
   }
 
+  const imageUrl = await uploadOnCloudinary(filePath);
+
   // create user object - create entry in db
+
   const user = await User.create({
     username,
     fullName,
     password,
     phoneNumber,
-    image,
+    image: imageUrl.secure_url,
   });
 
   // remove password and refresh token field from response
@@ -89,10 +104,9 @@ const registerUser = asyncHandler(async (req, res, next) => {
       );
   }
 
-  // return res
-  return res
-    .status(200)
-    .json(new ApiResponse(200, createdUser, "User registered successfully"));
+  return res.json(
+    new ApiResponse(200, createdUser, "User registered successfully")
+  );
 });
 
 const loginUser = asyncHandler(async (req, res, next) => {
@@ -129,7 +143,8 @@ const loginUser = asyncHandler(async (req, res, next) => {
     user._id
   );
 
-  Jwt.sign(accessToken, "accessToken");
+  //The below line is unnecessary because the above fn already used it
+  // Jwt.sign(accessToken, "accessToken");
 
   const loggedInUser = await User.findById(user._id).select(
     "-password -refreshToken"
