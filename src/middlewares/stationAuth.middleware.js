@@ -1,3 +1,4 @@
+import { STATION_ACCESS_TOKEN_SECRET } from "../config/index.js";
 import { Station } from "../models/station.model.js";
 import { ApiResponse } from "../utils/apiResponse.js";
 import asyncHandler from "../utils/asyncHandler.js";
@@ -12,7 +13,7 @@ export const verifyStationJWT = asyncHandler(async (req, res, next) => {
         )
     }
 
-    const decodedToken = Jwt.verify(token, process.env.STATION_ACCESS_TOKEN_SECRET)
+    const decodedToken = Jwt.verify(token, STATION_ACCESS_TOKEN_SECRET)
 
     const station = await Station.findById(decodedToken?._id).select("-password -refreshToken")
 
