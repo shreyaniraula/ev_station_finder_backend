@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { getAllStations, getStationDetails, loginStation, logoutStation, refreshAccessToken, registerStation, updatePanCard, updateStationDetails, verifyToken } from '../controllers/station.controller.js'
+import { getAllStations, getStationDetails, loginStation, logoutStation, refreshAccessToken, registerStation, updateStationImage, updateStationDetails, changeCurrentPassword, verifyToken } from '../controllers/station.controller.js'
 import { upload } from '../middlewares/multer.middleware.js'
 import { verifyStationJWT } from '../middlewares/stationAuth.middleware.js'
 
@@ -17,8 +17,9 @@ stationRouter.route('/register').post(
 
 stationRouter.route('/login').post(loginStation)
 stationRouter.route('/logout').post(verifyStationJWT, logoutStation)
-stationRouter.route('/update-pan-card').patch(verifyStationJWT, upload.single("panCard"), updatePanCard)
+stationRouter.route('/update-station-image').patch(verifyStationJWT, upload.single("station-image"), updateStationImage)
 stationRouter.route('/update-account').post(verifyStationJWT, updateStationDetails)
+stationRouter.route('/change-password').post(verifyStationJWT, changeCurrentPassword)
 stationRouter.route('/refresh-token').post(refreshAccessToken)
 stationRouter.route('/station-details').get(getStationDetails)
 stationRouter.route('/get-all-stations').get(getAllStations)

@@ -3,6 +3,7 @@ import { uploadOnCloudinary } from '../utils/cloudinary.js'
 import Jwt from 'jsonwebtoken'
 import { ApiResponse } from '../utils/apiResponse.js'
 import { Station } from '../models/station.model.js'
+import { STATION_ACCESS_TOKEN_SECRET } from '../config/index.js'
 
 const generateAccessAndRefreshTokens = async (stationId) => {
     try {
@@ -203,7 +204,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
             )
     }
 
-    const decodedToken = Jwt.verify(incomingRefreshToken, process.env.STATION_REFRESH_TOKEN_SECRET)
+    const decodedToken = Jwt.verify(incomingRefreshToken, STATION_REFRESH_TOKEN_SECRET)
 
     const station = await Station.findById(decodedToken?._id)
     if (!station) {
@@ -285,8 +286,6 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
 
 const getStationDetails = asyncHandler(async (req, res) => {
     const stationUsername = req.header('stationUsername')
-    console.log(req.header('stationUsername'))
-    console.log(req.station?.username)
 
     const stationDetails = await Station.findOne({ username: stationUsername }).select('-password -refreshToken')
 
@@ -304,7 +303,6 @@ const getStationDetails = asyncHandler(async (req, res) => {
 
 const updateStationDetails = asyncHandler(async (req, res) => {
     const { name, username, phoneNumber } = req.body
-    console.log(name, username, phoneNumber)
 
     if (!name || !username || !phoneNumber) {
         return res
@@ -354,48 +352,26 @@ const updateStationDetails = asyncHandler(async (req, res) => {
         )
 })
 
-const updatePanCard = asyncHandler(async (req, res) => {
-    const panCardLocalPath = req.file?.path
+const updateStationImage = asyncHandler(async (req, res) => {
+    const { imageUrl } = req.body
 
-    if (!panCardLocalPath) {
-        return res
-            .status(400)
-            .json(
-                new ApiResponse(
-                    400, {}, "Pan Card image is missing"
-                )
-            )
-    }
-
-    const panCard = await uploadOnCloudinary(panCardLocalPath)
-
-    if (!panCard) {
-        return res
-            .status(400)
-            .json(
-                new ApiResponse(
-                    400, {}, "Error while uploading pan card"
-                )
-            )
+    if (!imageUrl) {
+        return res.status(400).json(new ApiResponse(400, {}, "Image is missing"));
     }
 
     const station = await Station.findByIdAndUpdate(
         req.station._id,
         {
             $set: {
-                panCard: panCard.url
-            }
+                stationImage: imageUrl,
+            },
         },
         { new: true }
-    ).select("-password")
+    ).select("-password");
 
     return res
         .status(200)
-        .json(
-            new ApiResponse(
-                200, station, "Pan card updated successfully"
-            )
-        )
+        .json(new ApiResponse(200, station, "Image updated successfully"));
 })
 
 const getAllStations = asyncHandler(async (req, res) => {
@@ -419,7 +395,7 @@ const getAllStations = asyncHandler(async (req, res) => {
 const verifyToken = asyncHandler(async (req, res) => {
     const token = req.header('station-auth-token')
     if (!token) return res.json(false)
-    const verified = Jwt.verify(token, process.env.STATION_ACCESS_TOKEN_SECRET)
+    const verified = Jwt.verify(token, STATION_ACCESS_TOKEN_SECRET)
     if (!verified) return res.json(false)
 
     const user = await Station.findById(verified._id)
@@ -435,7 +411,7 @@ export {
     changeCurrentPassword,
     getStationDetails,
     updateStationDetails,
-    updatePanCard,
+    updateStationImage,
     getAllStations,
     verifyToken
 }

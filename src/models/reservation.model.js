@@ -1,4 +1,5 @@
 import mongoose, { Schema } from 'mongoose'
+import { type } from 'os';
 
 const reservationSchema = new Schema({
     reservedBy: {
@@ -14,12 +15,18 @@ const reservationSchema = new Schema({
         required: true
     },
     startingTime: {
-        type: String,
+        type: Date,
         required: true
     },
     endingTime: {
-        type: String,
-        required: true
+        type: Date,
+        required: true,
+        index: {expireAfterSeconds: 0}
+    },
+    date: {
+        type: Date,
+        required: true,
+        default: Date.now
     },
     remarks: {
         type: String,

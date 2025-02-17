@@ -5,29 +5,40 @@ import asyncHandler from "../utils/asyncHandler.js";
 
 //To be done by the station if some other EV is charged outside the app
 const updateReservation = asyncHandler(async (req, res) => {
-    const { reservedSlots, reservedTill } = req.body
+    const { startingTime, endingTime, paymentAmount, remarks } = req.body
 
     const station = await Station.findById(req.station._id)
 
-    if (station.noOfSlots < reservedSlots) {
-        return res.status(401).json(
-            new ApiResponse(
-                401,
-                {},
-                "Reserved slots cannot be more than total slots."
-            )
+    const availableSpots = station.noOfSlots - station.reservedSlots;
+    if (availableSpots <= 0) {
+        return res.status(400).json(
+            new ApiResponse(400, {}, "No available spots for reservation")
         )
     }
-    station.reservedSlots = reservedSlots
-    station.endingTime = reservedTill
+
+    const reservation = await Reservation.create({
+        reservedBy: req.station?._id,
+        reservedTo: req.station?._id,
+        paymentAmount,
+        startingTime,
+        endingTime,
+        remarks,
+    })
+
+    console.log(reservation)
+
+    if (!reservation) {
+        return res.status(400).json(
+            new ApiResponse(400, reservation, "Some error occurred while adding reservation")
+        )
+    }
+
+    //Increase the number of reserved slots by 1 if reservation is done
+    station.reservedSlots += 1
     station.save()
 
     return res.status(200).json(
-        new ApiResponse(
-            200,
-            { station },
-            "Reservation information updated successfully."
-        )
+        new ApiResponse(200, reservation, "Reservation added successfully")
     )
 })
 
@@ -36,6 +47,7 @@ const addReservation = asyncHandler(async (req, res) => {
     const userId = req.user?._id
 
     const { paymentAmount, startingTime, endingTime, remarks } = req.body
+    console.log(paymentAmount, startingTime, endingTime, remarks)
 
     const station = await Station.findById(stationId)
 
@@ -58,6 +70,8 @@ const addReservation = asyncHandler(async (req, res) => {
         )
     }
 
+    console.log('Here')
+
     const reservation = await Reservation.create({
         reservedBy: userId ? userId : stationId,
         reservedTo: stationId,
@@ -66,6 +80,9 @@ const addReservation = asyncHandler(async (req, res) => {
         endingTime,
         remarks,
     })
+
+    console.log('Reservation')
+    console.log(reservation)
 
     if (!reservation) {
         return res.status(400).json(
