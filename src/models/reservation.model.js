@@ -10,6 +10,18 @@ const reservationSchema = new Schema({
         type: Schema.Types.ObjectId,
         ref: "Station"
     },
+    reserverName: {
+        type: String,
+        required: true
+    },
+    reservedStation: {
+        type: String,
+        required: true
+    },
+    location: {
+        type: String,
+        required: true
+    },
     paymentAmount: {
         type: Number,
         required: true
@@ -21,7 +33,7 @@ const reservationSchema = new Schema({
     endingTime: {
         type: Date,
         required: true,
-        index: {expireAfterSeconds: 0}
+        index: { expireAfterSeconds: 0 }
     },
     date: {
         type: Date,
